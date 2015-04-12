@@ -4,11 +4,14 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
+import com.seu.jason.recorderspy.function.RecordFunc;
+
 /**
  * Created by Jason on 2015/4/12.
  */
 public class RecoredService extends Service {
     String Tag = "RecordService";
+    RecordFunc recordFunc = RecordFunc.getInstance();
 
     @Override
     public IBinder onBind(Intent intent) {

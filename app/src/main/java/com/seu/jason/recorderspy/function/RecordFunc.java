@@ -5,7 +5,9 @@ import android.media.MediaRecorder;
 import android.util.Log;
 
 import com.seu.jason.recorderspy.constant.Constants;
+import com.seu.jason.recorderspy.util.ErrorCode;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -35,27 +37,32 @@ public class RecordFunc {
     }
 
     //开始一次录音
-    public boolean startRecord(String filename){
+    public int startRecord(String filename){
         boolean result = false;
-        String filePath = Constants.RecorderDirectory+filename+".arm";
-        if(!filename.isEmpty()){
-            if(!isInRecord){            //判断是否正在录音
-                mediaRecorder = new MediaRecorder();
-                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
-                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-                mediaRecorder.setOutputFile(filePath);
-                try{                                                            //prepare失败是否要释放mediaRecorder
-                    mediaRecorder.prepare();
-                }catch(IOException e){
-                    Log.e(LOG_TAG,"startRecord().prepare() failed");
-                }
-                mediaRecorder.start();
-                result = true;
-                isInRecord = true;
-            }
+        String filePath = Constants.RecorderDirectory+filename+".amr";
+        File directory= new File( Constants.RecorderDirectory);
+        if (!directory.exists()) {
+            directory.mkdirs();
         }
-        return false;
+
+        if(!isInRecord){            //判断是否正在录音
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+            mediaRecorder.setOutputFile(filePath);
+            try{                                                            //prepare失败是否要释放mediaRecorder
+                mediaRecorder.prepare();
+                mediaRecorder.start();
+                isInRecord = true;
+                return ErrorCode.SUCCESS;
+            }catch(IOException e){
+                Log.e(LOG_TAG,"startRecord().prepare() failed");
+                return ErrorCode.E_UNKOWN;
+            }
+
+        }
+        return ErrorCode.E_UNKOWN;
     }
 
     //停止录音

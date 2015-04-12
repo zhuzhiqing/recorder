@@ -11,31 +11,42 @@
         android:layout_height="fill_parent"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_marginTop="119dp">
+        android:layout_alignParentTop="true">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/btnStartRecordStr"
-            android:id="@+id/btnStartRecord" />
+            android:id="@+id/btnRecord"
+            android:layout_weight="1" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btnStopRecordStr"
-            android:id="@+id/btnStopRecord" />
+            android:text="@string/btnScheduledRecordStr"
+            android:id="@+id/btnScheduleRecord"
+            android:layout_weight="1" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btnStartPlayStr"
-            android:id="@+id/btnStartPlay" />
+            android:text="@string/btnRecordListStr"
+            android:id="@+id/btnRecordList"
+            android:layout_weight="1" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btnStopPlayStr"
-            android:id="@+id/btnStopPlay" />
+            android:text="@string/action_settings"
+            android:id="@+id/btnSettings"
+            android:layout_weight="1" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btnHideStr"
+            android:id="@+id/btnHide"
+            android:layout_weight="1" />
     </LinearLayout>
 
 </RelativeLayout>

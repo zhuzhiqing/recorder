@@ -1,4 +1,4 @@
-package com.seu.jason.recorderspy.settings;
+package com.seu.jason.recorderspy.ui;
 
 import android.annotation.TargetApi;
 import android.content.Context;
