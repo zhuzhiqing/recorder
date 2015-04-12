@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">录音助手</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+
+    <!--MainActivity buttons -->
+    <string name="btnStartPlayStr">开始播放</string>
+    <string name="btnStopPlayStr">停止播放</string>
+    <string name="btnStartRecordStr">开始录音</string>
+    <string name="btnStopRecordStr">停止录音</string>
+
+
+</resources>
