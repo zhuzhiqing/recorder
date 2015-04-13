@@ -5,7 +5,7 @@ import android.media.MediaRecorder;
 import android.util.Log;
 
 import com.seu.jason.recorderspy.constant.Constants;
-import com.seu.jason.recorderspy.util.ErrorCode;
+import com.seu.jason.recorderspy.util.OptMsg;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,14 +55,14 @@ public class RecordFunc {
                 mediaRecorder.prepare();
                 mediaRecorder.start();
                 isInRecord = true;
-                return ErrorCode.SUCCESS;
+                return OptMsg.MSG_STATE_RECORDING;
             }catch(IOException e){
                 Log.e(LOG_TAG,"startRecord().prepare() failed");
-                return ErrorCode.E_UNKOWN;
+                return OptMsg.MSG_STATE_NOT_RECORDING;
             }
 
         }
-        return ErrorCode.E_UNKOWN;
+        return OptMsg.MSG_STATE_NOT_RECORDING;
     }
 
     //停止录音

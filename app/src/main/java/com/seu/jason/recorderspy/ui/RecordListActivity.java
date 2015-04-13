@@ -1,10 +1,8 @@
 package com.seu.jason.recorderspy.ui;
 
 import android.app.Activity;
-import android.app.ListActivity;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Environment;
 import android.widget.ListView;
 
 import com.seu.jason.recorderspy.R;
@@ -17,8 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.datatype.Duration;
 
 /**
  * Created by Jason on 2015/4/12.

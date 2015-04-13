@@ -1,19 +1,25 @@
 package com.seu.jason.recorderspy.ui;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 
 import com.seu.jason.recorderspy.R;
-import com.seu.jason.recorderspy.function.RecordFunc;
-import com.seu.jason.recorderspy.util.ErrorCode;
-import com.seu.jason.recorderspy.util.UtilHelp;
-
-
+import com.seu.jason.recorderspy.service.RecoredService;
+import com.seu.jason.recorderspy.util.OptMsg;
 
 public class MainActivity extends ActionBarActivity {
     private static final String LOG_TAG = "MainActivity";
@@ -25,15 +31,36 @@ public class MainActivity extends ActionBarActivity {
     private Button btnSettings;
     private Button btnHide;
 
-    private boolean mIsInRecord=false;
+    private ServiceConnection mSc;              //用于连接Service
+    private IBinder serviceBinder;               //绑定后得到的service端的binder
+
+
     @Override
-         protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
+        Log.d(LOG_TAG,"onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         findView();
         initVar();
     }
 
+    @Override
+    protected void onStart(){
+        Log.d(LOG_TAG,"onStart()");
+        super.onStart();
+        Log.d(LOG_TAG,this.getApplicationContext().getPackageCodePath());
+        Intent serviceIntent = new Intent(this.getApplicationContext(),RecoredService.class);
+        this.bindService(serviceIntent,mSc, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(LOG_TAG,"onStop()");
+        super.onStop();
+        //此处必需要解绑，否则造成内存泄露
+        this.unbindService(mSc);
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -63,7 +90,7 @@ public class MainActivity extends ActionBarActivity {
         @Override
         public void onClick(View v) {
             if(v==btnRecord){
-                record();
+                sendOptMsg(OptMsg.MSG_REQ_RECORD_TRIGGER);
             }else if(v==btnScheduleRecord){
 
             }else if(v==btnRecordList){
@@ -95,24 +122,60 @@ public class MainActivity extends ActionBarActivity {
 
     //初始化变量
     private void initVar(){
+        Intent serviceIntent = new Intent(this.getApplicationContext(),RecoredService.class);
+        startService(serviceIntent);
+        mSc = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                serviceBinder = service;
+                Log.d(LOG_TAG, "service connected");
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                Log.d(LOG_TAG,"service disconnected");
+                //serviceBinder = null;
+            }
+        };
+    }
+
+    private void setBtnRecordStr(int resID){
 
     }
 
-    private void record(){
-        if(!mIsInRecord){       //不在录音
-            RecordFunc recordFunc = RecordFunc.getInstance();
-            int result = recordFunc.startRecord(UtilHelp.getTime());
-            if(result!=ErrorCode.SUCCESS){
-                mIsInRecord = false;
-            }else {
-                mIsInRecord = true;
-                btnRecord.setText(R.string.btnStopRecordStr);
-            }
-        }else{
-            RecordFunc recordFunc=RecordFunc.getInstance();
-            recordFunc.stopRecord();
-            mIsInRecord = false;
-            btnRecord.setText(R.string.btnStartRecordStr);
+    private void sendOptMsg(int optCode){
+        Log.d(LOG_TAG,"sendOptMsg()");
+        Messenger messenger = new Messenger(serviceBinder);
+        Message msg = new Message();
+        msg.what = optCode;
+        msg.replyTo = mainActivityMessenger;
+        try{
+            messenger.send(msg);
+        }catch (RemoteException e){
+            e.printStackTrace();
         }
     }
+
+    class ActivityMsgHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            handleSpecificMsg(msg);
+        }
+
+        private void handleSpecificMsg(Message msg){
+            switch (msg.what){
+                case OptMsg.MSG_STATE_RECORDING:
+                    btnRecord.setText(R.string.btnStopRecordStr);
+                    break;
+                case OptMsg.MSG_STATE_NOT_RECORDING:
+                    btnRecord.setText(R.string.btnStartRecordStr);
+                    break;
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+    }
+
+    Messenger mainActivityMessenger = new Messenger(new ActivityMsgHandler());
+
 }

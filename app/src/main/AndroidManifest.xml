@@ -22,7 +22,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.RecoredService" ></service>
+        <!--process属性设为remote,表示服务运行在另一个进程中-->
+        <service android:name=".service.RecoredService" android:process=":remote"></service>
+        <!--service android:name=".service.RecoredService" ></service-->
 
         <activity
             android:name=".ui.SettingsActivity"

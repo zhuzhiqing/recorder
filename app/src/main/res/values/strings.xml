@@ -2,8 +2,7 @@
 <resources>
 
     <string name="app_name">录音助手</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">设置</string>
     <string name="btnHideStr">隐藏界面</string>
 
     <!--MainActivity buttons -->
