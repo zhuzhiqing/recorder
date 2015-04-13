@@ -2,6 +2,7 @@ package com.seu.jason.recorderspy.service;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -25,85 +26,106 @@ public class RecoredService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(LOG_TAG,"onBind()");
+        Log.d(LOG_TAG, "onBind()");
         return messenger.getBinder();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d(LOG_TAG,"onUnbind()");
+        Log.d(LOG_TAG, "onUnbind()");
         return super.onUnbind(intent);
     }
 
     @Override
     public void onCreate() {
-        Log.d(LOG_TAG,"onCreate()");
+        Log.d(LOG_TAG, "onCreate()");
         super.onCreate();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(LOG_TAG,"onStartCommand()");
+        Log.d(LOG_TAG, "onStartCommand()");
         //return super.onStartCommand(intent, flags, startId);
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        Log.d(LOG_TAG,"onDestroy()");
+        Log.d(LOG_TAG, "onDestroy()");
         super.onDestroy();
     }
 
-    private int startRecord(){
-        Log.d(LOG_TAG,"startRecord()");
+    private int startRecord() {
+        Log.d(LOG_TAG, "startRecord()");
         int result = OptMsg.MSG_STATE_UNKNOW;
-        if(!mIsRecording){
+        if (!mIsRecording) {
             result = recordFunc.startRecord(UtilHelp.getTime());
-            if(result!= OptMsg.MSG_STATE_RECORDING){
+            if (result != OptMsg.MSG_STATE_RECORDING) {
                 mIsRecording = false;
-            }else{
+            } else {
                 mIsRecording = true;
             }
-        }else{
+        } else {
             result = OptMsg.MSG_STATE_RECORDING;
         }
         return result;
     }
 
-    private void stopRecord(){
-        Log.d(LOG_TAG,"stopRecord()");
-        if(mIsRecording){
+    private void stopRecord() {
+        Log.d(LOG_TAG, "stopRecord()");
+        if (mIsRecording) {
             recordFunc.stopRecord();
         }
         mIsRecording = false;
     }
 
-    Handler serviceHandler = new Handler(){
+    Handler serviceHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            switch (msg.what){
+            switch (msg.what) {
                 case OptMsg.MSG_REQ_RECORD_TRIGGER:
-                    handleTriggerRecord((Messenger)msg.replyTo);
+                    handleTriggerRecord((Messenger) msg.replyTo);
                     break;
-                default:;
+                case OptMsg.MSG_REQ_CHECK_STATE:
+                    handleCheckState((Messenger) msg.replyTo);
+                    break;
+                default:
+                    ;
             }
             super.handleMessage(msg);
         }
 
-        private void handleTriggerRecord(Messenger replyMessenger){
+        private void handleTriggerRecord(Messenger replyMessenger) {
             int rstCode = -1;
-            if(mIsRecording){
+            if (mIsRecording) {
                 stopRecord();
                 rstCode = OptMsg.MSG_STATE_NOT_RECORDING;
-            }else{
+            } else {
                 rstCode = startRecord();
             }
-            if(messenger!=null){
+            if (messenger != null) {
                 Message msg = new Message();
                 msg.what = rstCode;
                 try {
                     replyMessenger.send(msg);
-                }catch (RemoteException e){
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private void handleCheckState(Messenger replyMessenger) {
+            Log.d(LOG_TAG, "handleCheckState()");
+            if (messenger != null) {
+                Message msg = new Message();
+                msg.what = OptMsg.MSG_RST_CHECK_STATE;
+                Bundle b = new Bundle();
+                b.putBoolean("isRecording", mIsRecording);
+                b.putBoolean("isPlaying", mIsPlaying);
+                msg.setData(b);
+                try {
+                    replyMessenger.send(msg);
+                } catch (RemoteException e) {
                     e.printStackTrace();
                 }
             }

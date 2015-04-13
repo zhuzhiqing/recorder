@@ -17,22 +17,22 @@ import java.util.List;
 /**
  * Created by Jason on 2015/4/13.
  */
-public class RecordListAdapter extends BaseAdapter{
+public class RecordListAdapter extends BaseAdapter {
     static final String LOG_TAG = "RecordListAdapter";
     private Context mContext = null;
     private List<RecordListItem> mItems = new ArrayList<RecordListItem>();
     private LayoutInflater mLayoutInflater;
 
-    public RecordListAdapter(Context context){
+    public RecordListAdapter(Context context) {
         mContext = context;
         this.mLayoutInflater = LayoutInflater.from(context);
     }
 
-    public void setListItems(List<RecordListItem> itl){
+    public void setListItems(List<RecordListItem> itl) {
         mItems = itl;
     }
 
-    public void addItem(RecordListItem it){
+    public void addItem(RecordListItem it) {
         mItems.add(it);
     }
 
@@ -54,24 +54,24 @@ public class RecordListAdapter extends BaseAdapter{
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         RecordItemViewHolder holder;
-        if(convertView == null){
-            convertView = mLayoutInflater.inflate(R.layout.record_list_item,null);
+        if (convertView == null) {
+            convertView = mLayoutInflater.inflate(R.layout.record_list_item, null);
             holder = new RecordItemViewHolder();
-            holder.textFileName = (TextView)convertView.findViewById(R.id.textFileName);
-            holder.textRecordLong = (TextView)convertView.findViewById(R.id.textRecordLong);
-            holder.imgView = (ImageView)convertView.findViewById(R.id.imgIcon);
+            holder.textFileName = (TextView) convertView.findViewById(R.id.textFileName);
+            holder.textRecordLong = (TextView) convertView.findViewById(R.id.textRecordLong);
+            holder.imgView = (ImageView) convertView.findViewById(R.id.imgIcon);
             convertView.setTag(holder);     //绑定ViewHolder对象
-        }else{
-            holder = (RecordItemViewHolder)convertView.getTag();
+        } else {
+            holder = (RecordItemViewHolder) convertView.getTag();
         }
         holder.imgView.setImageResource(R.drawable.audio);
         holder.textFileName.setText(mItems.get(position).getmFileName());
-        holder.textRecordLong.setText("时长:"+mItems.get(position).getmRecordLong());
+        holder.textRecordLong.setText("时长:" + mItems.get(position).getmRecordLong());
 
         return convertView;
     }
 
-    class RecordItemViewHolder{
+    class RecordItemViewHolder {
         public ImageView imgView;           //图标
         public TextView textFileName;      //文件名
         public TextView textRecordLong;    //录音时长

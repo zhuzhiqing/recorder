@@ -24,20 +24,19 @@ import com.seu.jason.recorderspy.util.OptMsg;
 public class MainActivity extends ActionBarActivity {
     private static final String LOG_TAG = "MainActivity";
 
+    Messenger mainActivityMessenger = new Messenger(new ActivityMsgHandler());
     //界面控件
     private Button btnRecord;
     private Button btnScheduleRecord;
     private Button btnRecordList;
     private Button btnSettings;
     private Button btnHide;
-
     private ServiceConnection mSc;              //用于连接Service
     private IBinder serviceBinder;               //绑定后得到的service端的binder
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(LOG_TAG,"onCreate()");
+        Log.d(LOG_TAG, "onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         findView();
@@ -45,17 +44,19 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
-    protected void onStart(){
-        Log.d(LOG_TAG,"onStart()");
+    protected void onStart() {
+        Log.d(LOG_TAG, "onStart()");
         super.onStart();
-        Log.d(LOG_TAG,this.getApplicationContext().getPackageCodePath());
-        Intent serviceIntent = new Intent(this.getApplicationContext(),RecoredService.class);
-        this.bindService(serviceIntent,mSc, Context.BIND_AUTO_CREATE);
+
+        Intent serviceIntent = new Intent(this.getApplicationContext(), RecoredService.class);
+        this.bindService(serviceIntent, mSc, Context.BIND_AUTO_CREATE);
+
+//        th.start();
     }
 
     @Override
     protected void onStop() {
-        Log.d(LOG_TAG,"onStop()");
+        Log.d(LOG_TAG, "onStop()");
         super.onStop();
         //此处必需要解绑，否则造成内存泄露
         this.unbindService(mSc);
@@ -78,7 +79,7 @@ public class MainActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            Intent intent = new Intent(this,SettingsActivity.class);
+            Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
             return true;
         }
@@ -86,32 +87,13 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    class BtnListener implements View.OnClickListener {
-        @Override
-        public void onClick(View v) {
-            if(v==btnRecord){
-                sendOptMsg(OptMsg.MSG_REQ_RECORD_TRIGGER);
-            }else if(v==btnScheduleRecord){
-
-            }else if(v==btnRecordList){
-                Intent intent = new Intent(MainActivity.this,RecordListActivity.class);
-                startActivity(intent);
-            }else if(v==btnSettings){
-                Intent intent = new Intent(MainActivity.this,SettingsActivity.class);
-                startActivity(intent);
-            }else if(v==btnHide){
-
-            }
-        }
-    }
-
     //设置界面元素
-    private void findView(){
-        btnRecord = (Button)findViewById(R.id.btnRecord);
-        btnScheduleRecord = (Button)findViewById(R.id.btnScheduleRecord);
-        btnRecordList = (Button)findViewById(R.id.btnRecordList);
-        btnSettings = (Button)findViewById(R.id.btnSettings);
-        btnHide =  (Button)findViewById(R.id.btnHide);
+    private void findView() {
+        btnRecord = (Button) findViewById(R.id.btnRecord);
+        btnScheduleRecord = (Button) findViewById(R.id.btnScheduleRecord);
+        btnRecordList = (Button) findViewById(R.id.btnRecordList);
+        btnSettings = (Button) findViewById(R.id.btnSettings);
+        btnHide = (Button) findViewById(R.id.btnHide);
 
         btnRecord.setOnClickListener(new BtnListener());
         btnScheduleRecord.setOnClickListener(new BtnListener());
@@ -121,38 +103,57 @@ public class MainActivity extends ActionBarActivity {
     }
 
     //初始化变量
-    private void initVar(){
-        Intent serviceIntent = new Intent(this.getApplicationContext(),RecoredService.class);
+    private void initVar() {
+        Intent serviceIntent = new Intent(this.getApplicationContext(), RecoredService.class);
         startService(serviceIntent);
         mSc = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 serviceBinder = service;
                 Log.d(LOG_TAG, "service connected");
+                sendOptMsg(OptMsg.MSG_REQ_CHECK_STATE);       //checkState();
             }
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                Log.d(LOG_TAG,"service disconnected");
-                //serviceBinder = null;
+                Log.d(LOG_TAG, "service disconnected");
+                serviceBinder = null;
             }
         };
     }
 
-    private void setBtnRecordStr(int resID){
+    private void sendOptMsg(int optCode) {
+        Log.d(LOG_TAG, "sendOptMsg()");
+        if (serviceBinder == null)
+            return;
 
-    }
-
-    private void sendOptMsg(int optCode){
-        Log.d(LOG_TAG,"sendOptMsg()");
         Messenger messenger = new Messenger(serviceBinder);
         Message msg = new Message();
         msg.what = optCode;
         msg.replyTo = mainActivityMessenger;
-        try{
+        try {
             messenger.send(msg);
-        }catch (RemoteException e){
+        } catch (RemoteException e) {
             e.printStackTrace();
+        }
+    }
+
+    class BtnListener implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            if (v == btnRecord) {
+                sendOptMsg(OptMsg.MSG_REQ_RECORD_TRIGGER);
+            } else if (v == btnScheduleRecord) {
+
+            } else if (v == btnRecordList) {
+                Intent intent = new Intent(MainActivity.this, RecordListActivity.class);
+                startActivity(intent);
+            } else if (v == btnSettings) {
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+            } else if (v == btnHide) {
+                finish();
+            }
         }
     }
 
@@ -162,20 +163,36 @@ public class MainActivity extends ActionBarActivity {
             handleSpecificMsg(msg);
         }
 
-        private void handleSpecificMsg(Message msg){
-            switch (msg.what){
+        private void handleSpecificMsg(Message msg) {
+            switch (msg.what) {
                 case OptMsg.MSG_STATE_RECORDING:
                     btnRecord.setText(R.string.btnStopRecordStr);
                     break;
                 case OptMsg.MSG_STATE_NOT_RECORDING:
                     btnRecord.setText(R.string.btnStartRecordStr);
                     break;
+                case OptMsg.MSG_RST_CHECK_STATE:            //checkState返回结果
+                    handleCheckState(msg);
+                    break;
                 default:
                     super.handleMessage(msg);
             }
         }
+
+        private void handleCheckState(Message msg) {
+            Bundle b = msg.getData();
+            if (b == null)
+                return;
+
+            if (b.getBoolean("isRecording")) {
+                btnRecord.setText(R.string.btnStopRecordStr);
+            }
+
+            if (b.getBoolean("isPlaying")) {
+
+            }
+        }
     }
 
-    Messenger mainActivityMessenger = new Messenger(new ActivityMsgHandler());
 
 }

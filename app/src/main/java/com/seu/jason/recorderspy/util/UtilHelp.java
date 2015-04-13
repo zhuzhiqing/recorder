@@ -12,8 +12,8 @@ import java.util.Date;
  */
 public class UtilHelp {
 
-    static public String getTime(){
-        Date dt=new Date();//如果不需要格式,可直接用dt,dt就是当前系统时间
+    static public String getTime() {
+        Date dt = new Date();//如果不需要格式,可直接用dt,dt就是当前系统时间
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");//设置显示格式
         return df.format(dt);//用DateFormat的format()方法在dt中获取并以yyyy/MM/dd HH:mm:ss格式显示
     }
@@ -27,7 +27,7 @@ public class UtilHelp {
      */
     public static long getAmrDuration(File file) throws IOException {
         long duration = -1;
-        int[] packedSize = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
+        int[] packedSize = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");

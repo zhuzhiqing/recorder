@@ -11,14 +11,14 @@ public class RecordListItem {
     private Drawable mIcon;
     private boolean mIsSelected;
 
-    public RecordListItem(String mFileName,String mRecordLong,Drawable mIcon,boolean mIsSelected){
+    public RecordListItem(String mFileName, String mRecordLong, Drawable mIcon, boolean mIsSelected) {
         this.mFileName = mFileName;
         this.mRecordLong = mRecordLong;
         this.mIcon = mIcon;
         this.mIsSelected = mIsSelected;
     }
 
-    public RecordListItem(String mFileName,String mRecordLong,Drawable mIcon){
+    public RecordListItem(String mFileName, String mRecordLong, Drawable mIcon) {
         this.mFileName = mFileName;
         this.mRecordLong = mRecordLong;
         this.mIcon = mIcon;

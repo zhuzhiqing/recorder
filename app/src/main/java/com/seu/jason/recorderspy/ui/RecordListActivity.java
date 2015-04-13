@@ -27,37 +27,37 @@ public class RecordListActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.record_list_activity);
-        lv = (ListView)findViewById(R.id.record_list_activity_listVew);
+        lv = (ListView) findViewById(R.id.record_list_activity_listVew);
         listFileInDirectory(new File(Constants.RecorderDirectoryWithoutSeparator));
     }
 
-    private void listFileInDirectory(final File dir){
-        if(dir.isDirectory()){
+    private void listFileInDirectory(final File dir) {
+        if (dir.isDirectory()) {
             getFilesDetails(dir.listFiles());
         }
     }
 
-    private void getFilesDetails(File[] files){
+    private void getFilesDetails(File[] files) {
         fileList.clear();
         Drawable currentIcon;
         long duration = 0;
-        for(File currentFile:files){
+        for (File currentFile : files) {
             //判断是一个文件夹还是文件
-            if(currentFile.isFile()){
+            if (currentFile.isFile()) {
                 //获取文件名
                 String fileName = currentFile.getName();
                 //根据文件名判断文件类型，设置不同的图标
-             //   if()
+                //   if()
                 //获取时长
                 try {
                     duration = UtilHelp.getAmrDuration(currentFile);
-                }catch (IOException e){
+                } catch (IOException e) {
 
                 }
 
             }
             //确保只显示文件名、不显示路径名
-            fileList.add(new RecordListItem(currentFile.getName(),String.valueOf(duration),getResources().getDrawable(R.drawable.audio)));
+            fileList.add(new RecordListItem(currentFile.getName(), String.valueOf(duration), getResources().getDrawable(R.drawable.audio)));
         }
         //Collections.sort(fileList);
         RecordListAdapter ita = new RecordListAdapter(this);

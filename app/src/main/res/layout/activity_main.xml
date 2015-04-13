@@ -1,52 +1,55 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
+    tools:context=".MainActivity">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true">
+        android:layout_alignParentTop="true"
+        android:orientation="vertical">
 
         <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btnStartRecordStr"
             android:id="@+id/btnRecord"
-            android:layout_weight="1" />
-
-        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btnScheduledRecordStr"
+            android:layout_weight="1"
+            android:text="@string/btnStartRecordStr" />
+
+        <Button
             android:id="@+id/btnScheduleRecord"
-            android:layout_weight="1" />
-
-        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btnRecordListStr"
+            android:layout_weight="1"
+            android:text="@string/btnScheduledRecordStr" />
+
+        <Button
             android:id="@+id/btnRecordList"
-            android:layout_weight="1" />
-
-        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/action_settings"
+            android:layout_weight="1"
+            android:text="@string/btnRecordListStr" />
+
+        <Button
             android:id="@+id/btnSettings"
-            android:layout_weight="1" />
-
-        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btnHideStr"
+            android:layout_weight="1"
+            android:text="@string/action_settings" />
+
+        <Button
             android:id="@+id/btnHide"
-            android:layout_weight="1" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/btnHideStr" />
     </LinearLayout>
 
 </RelativeLayout>
