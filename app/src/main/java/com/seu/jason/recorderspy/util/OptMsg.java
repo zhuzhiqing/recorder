@@ -10,6 +10,11 @@ public class OptMsg {
     static final public int MSG_REQ_PLAY_START = 3103;
     static final public int MSG_REQ_PLAY_STOP = 3104;
     static final public int MSG_REQ_CHECK_STATE = 3105;
+    static final public int MSG_REQ_SCHEDULE_RECORD_START = 3106;
+    static final public int MSG_REQ_SCHEDULE_RECORD_STOP = 3107;
+    static final public int MSG_REQ_SET_ALARM = 3108;
+    static final public int MSG_REQ_CANCLE_ALARM = 3109;
+    static final public int MSG_REQ_ALARM_TIMING = 3110;        //定时时间到
 
     static final public int MSG_RST_RECORD_START_SUCCESS = 3201;
     static final public int MSG_REQ_RECORD_START_FAILED = 3202;
@@ -26,6 +31,8 @@ public class OptMsg {
     static final public int MSG_STATE_PLAYING = 3302;
     static final public int MSG_STATE_NOT_PLAYING = 3303;
     static final public int MSG_STATE_UNKNOW = 3304;
+    static final public int MSG_STATE_SCHEDULE_RECORDING = 3305;
 
+    static final public int MSG_INTERVAL_UP = 3400; //录音间隔
 
 }

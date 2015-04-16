@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
 
     <application
         android:allowBackup="true"
@@ -32,6 +34,15 @@
             android:name=".ui.SettingsActivity"
             android:label="@string/title_activity_settings"></activity>
         <activity android:name=".ui.RecordListActivity"></activity>
+
+        <receiver android:name=".boardcast.AlarmReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.seu.jason.recorderdspy.alarm_record_start_action" />
+                <action android:name="com.seu.jason.recorderdspy.alarm_record_stop_action" />
+            </intent-filter>
+        </receiver>
     </application>
+
 
 </manifest>

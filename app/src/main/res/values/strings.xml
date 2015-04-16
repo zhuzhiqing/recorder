@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">录音助手</string>
+    <string name="app_name">录音机</string>
     <string name="action_settings">设置</string>
     <string name="btnHideStr">隐藏界面</string>
 
@@ -10,7 +10,10 @@
     <string name="btnStopPlayStr">停止播放</string>
     <string name="btnStartRecordStr">快速录音</string>
     <string name="btnStopRecordStr">停止录音</string>
-    <string name="btnScheduledRecordStr">定时录音</string>
+    <string name="btnScheduledRecordStr">设置定时</string>
+    <string name="btnScheduledRecordCancelStr">删除定时</string>
+    <string name="btnScheduledRecordInRecording">结束定时录音</string>
+    <string name="btnScheduledRecordInRecordingStr">定时录音中</string>
     <string name="btnRecordListStr">录音列表</string>
 
     <!--错误码-->

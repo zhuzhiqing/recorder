@@ -18,6 +18,18 @@ public class UtilHelp {
         return df.format(dt);//用DateFormat的format()方法在dt中获取并以yyyy/MM/dd HH:mm:ss格式显示
     }
 
+    static public String getTimeInChinese() {
+        Date dt = new Date();//如果不需要格式,可直接用dt,dt就是当前系统时间
+        DateFormat df = new SimpleDateFormat(" yyyy年MM月dd日 HH:mm");//设置显示格式
+        return df.format(dt);//用DateFormat的format()方法在dt中获取并以yyyy/MM/dd HH:mm:ss格式显示
+    }
+
+    static public String getTimeInChinese(Long time) {
+        Date dt = new Date(time);//如果不需要格式,可直接用dt,dt就是当前系统时间
+        DateFormat df = new SimpleDateFormat(" yyyy年MM月dd日 HH:mm");//设置显示格式
+        return df.format(dt);//用DateFormat的format()方法在dt中获取并以yyyy/MM/dd HH:mm:ss格式显示
+    }
+
     /**
      * 得到amr的时长
      *
