@@ -99,6 +99,8 @@ public class RecoredService extends Service {
             } else if (opt == RECEIVER_CMD_ALARM_END) {
                 stopScheduleRecord(true);
             }
+        } else {
+            startCheck();
         }
 
         return START_STICKY;
@@ -246,6 +248,42 @@ public class RecoredService extends Service {
         SharedPreferences.Editor mEditor = mSharedPreferences.edit();
         mEditor.putBoolean("isEnable", Enable);
         mEditor.commit();
+    }
+
+    private void startCheck() {
+        Log.d(LOG_TAG, "startCheck()");
+        if (!getSharedPreferenceAlarmEnable()) {
+            return;
+        }
+        if (mIsSetAlarm)
+            return;
+        //时间不晚于当前时间，退出
+        Date startTime = new Date(getSharedPreferenceAlarmStartTime());
+        Date endTime = new Date(getSharedPreferenceAlarmEndTime());
+        Date now = new Date();
+//        if((!startTime.after(now))||(!endTime.after(startTime))){
+        if ((!endTime.after(now))) {
+            setmSharedPreferencesAlarmEnable(false);
+            Log.d(LOG_TAG, "bootCheck()--过期");
+            return;
+        }
+
+        AlarmManager am = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(ALARM_RECORD_START_ACTION);
+        PendingIntent sender = PendingIntent.getBroadcast(
+                this, 0, intent, 0);
+        am.set(AlarmManager.RTC, getSharedPreferenceAlarmStartTime(), sender);
+
+        AlarmManager amEnd = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+        Intent intentEnd = new Intent(ALARM_RECORD_STOP_ACTION);
+        PendingIntent senderEnd = PendingIntent.getBroadcast(
+                this, 1, intentEnd, 0);
+        amEnd.set(AlarmManager.RTC, getSharedPreferenceAlarmEndTime(), senderEnd);
+        mIsSetAlarm = true;     //设置闹钟标志
+
+        setmSharedPreferencesAlarmEnable(true);
+        sendStateUpdate();
+        printState();
     }
 
     private void bootCheck() {
