@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">录音机</string>
+    <string name="action_settings">设置</string>
+    <string name="btnHideStr">隐藏界面</string>
+
+    <!--MainActivity buttons -->
+    <string name="btnStartPlayStr">开始播放</string>
+    <string name="btnStopPlayStr">停止播放</string>
+    <string name="btnStartRecordStr">快速录音</string>
+    <string name="btnStopRecordStr">停止录音</string>
+    <string name="btnScheduledRecordStr">设置后台录音</string>
+    <string name="btnScheduledRecordCancelStr">删除后台定时</string>
+    <string name="btnScheduledRecordInRecording">结束定时录音</string>
+    <string name="btnScheduledRecordInRecordingStr">定时录音中</string>
+    <string name="btnRecordListStr">录音列表</string>
+
+    <!--错误码-->
+    <string name="error_no_sdcard">没有SD卡，无法存储录音数据</string>
+    <string name="error_state_record">正在录音中，请先停止录音</string>
+    <string name="error_unknown">无法识别的错误</string>
+</resources>
