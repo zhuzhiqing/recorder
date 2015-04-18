@@ -3,6 +3,7 @@ package com.seu.jason.recorder.service;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -15,7 +16,6 @@ import android.util.Log;
 import com.seu.jason.recorder.function.RecordFunction;
 import com.seu.jason.recorder.util.OptMsg;
 import com.seu.jason.recorder.util.UtilHelp;
-
 
 /**
  * Created by Jason on 2015/4/17.
@@ -37,9 +37,53 @@ public class RecordService extends Service {
 
     //状态
     private boolean mIsRecording = false;
-    private boolean mIsInScheduleRecording = false;
-    private boolean mIsSetAlarm = false;
     private boolean mIsBackgroundRecord = false;
+    private boolean mIsBackgroundError = false;
+
+    //同步锁
+    Object preferenceLock = new Object();
+    Object statusLock = new Object();
+
+    Thread recorderCheckTh;
+
+
+    public void setmIsBackgroundRecord(boolean mIsBackgroundRecord) {
+        synchronized (statusLock) {
+            this.mIsBackgroundRecord = mIsBackgroundRecord;
+        }
+    }
+
+    public void setmIsRecording(boolean mIsRecording) {
+        synchronized (statusLock) {
+            this.mIsRecording = mIsRecording;
+        }
+    }
+
+    public boolean getmIsRecording() {
+        synchronized (statusLock) {
+            return mIsRecording;
+        }
+    }
+
+    public boolean getmIsBackgroundRecord() {
+        synchronized (statusLock) {
+            return mIsBackgroundRecord;
+        }
+    }
+
+    public boolean getmIsBackgroundError() {
+        synchronized (statusLock) {
+            return mIsBackgroundError;
+        }
+    }
+
+    public void setmIsBackgroundError(boolean mIsBackgroundError) {
+        synchronized (statusLock) {
+            this.mIsBackgroundError = mIsBackgroundError;
+        }
+    }
+
+
 
     @Override
     public void onCreate() {
@@ -48,6 +92,8 @@ public class RecordService extends Service {
         messenger = new Messenger(serviceHandler);
         recordFunc = RecordFunction.getInstance();
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        recorderCheckTh = new Thread(new RecordCheckThread());        //启动检测线程
+        recorderCheckTh.start();
     }
 
     @Override
@@ -72,6 +118,7 @@ public class RecordService extends Service {
         super.onDestroy();
         messenger = null;
         recordFunc = null;
+        recorderCheckTh.stop();
     }
 
     @Override
@@ -91,15 +138,15 @@ public class RecordService extends Service {
     public void sendStateUpdate() {
         Log.d(LOG_TAG, "sendStateUpdate()");
 
-        if (replyTo == null)
+        if (replyTo == null) {
+            Log.e(LOG_TAG, "no receiver(replyTo==null)");
             return;
+        }
         Message msg = new Message();
         msg.what = OptMsg.MSG_RST_CHECK_STATE;
         Bundle b = new Bundle();
-        b.putBoolean("mIsRecording", mIsRecording);
-        b.putBoolean("mIsInScheduleRecording", mIsInScheduleRecording);
-        b.putBoolean("mIsSetAlarm", mIsSetAlarm);
-        b.putBoolean("mIsBackgroundRecord", mIsBackgroundRecord);
+        b.putBoolean("mIsRecording", getmIsRecording());
+        b.putBoolean("mIsBackgroundRecord", getmIsBackgroundRecord());
         b.putLong("interval", getSharedPreferencesInterval());
         msg.setData(b);
 
@@ -108,7 +155,6 @@ public class RecordService extends Service {
         } catch (RemoteException e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -117,13 +163,12 @@ public class RecordService extends Service {
     public void startNormalRecord() {
         Log.d(LOG_TAG, "startNormalRecord()");
 
-        if (mIsInScheduleRecording) return;          //如果正在后台录音，则不能开始手动录音
-        if (mIsRecording) return;                     //如果已经在录音，也不能开始录音
-        if (mIsBackgroundRecord) return;
+        if (getmIsRecording()) return;                     //如果已经在录音，也不能开始录音
+        if (getmIsBackgroundRecord()) return;             //如果正在后台录音，则不能开始手动录音
 
         int result = recordFunc.startRecord(UtilHelp.getTime());    //启动录音机
         if (result == OptMsg.STATE_SUCCESS) {
-            mIsRecording = true;
+            setmIsRecording(true);
             sendStateUpdate();                          //状态变更
         }
     }
@@ -134,9 +179,9 @@ public class RecordService extends Service {
     public void stopNormalRecord() {
         Log.d(LOG_TAG, "stopNormalRecord()");
 
-        if (mIsRecording) {
+        if (getmIsRecording()) {
             recordFunc.stopRecord();
-            mIsRecording = false;
+            setmIsRecording(false);
             sendStateUpdate();
         }
     }
@@ -144,14 +189,14 @@ public class RecordService extends Service {
     public void startBackgroundRecord() {
         Log.d(LOG_TAG, "startBackgroundRecord()");
 
-        if (mIsRecording)        //如果正在进行普通录音，则停止普通录音
-            startNormalRecord();
+        if (getmIsRecording())        //如果正在进行普通录音，则停止普通录音
+            stopNormalRecord();
 
         int result = OptMsg.STATE_ERROR_UNKNOW;
-        if (!mIsBackgroundRecord) {
-            result = recordFunc.startRecord(UtilHelp.getTime());
+        if (!getmIsBackgroundRecord()) {
+            result = recordFunc.startRecord(UtilHelp.getTime(), mediaErrorListener, mediaInfoListener);
             if (result == OptMsg.STATE_SUCCESS) {
-                mIsBackgroundRecord = true;
+                setmIsBackgroundRecord(true);
                 sendStateUpdate();                  //状态变更
                 new Thread(new RecordTimerThread()).start();      //启动定时器
             }
@@ -161,17 +206,21 @@ public class RecordService extends Service {
     public void stopBackgroundRecord() {
         Log.d(LOG_TAG, "stopBackgroundRecord()");
 
-        if (mIsBackgroundRecord) {
+        if (getmIsBackgroundRecord()) {
             recordFunc.stopRecord();
-            mIsBackgroundRecord = false;
+            setmIsBackgroundRecord(false);
             sendStateUpdate();
         }
+    }
+
+    public void resetRecordStatus() {
+
     }
 
     //因为定时器，所以重新启动
     private void timerRestart() {
         Log.d(LOG_TAG, "timerRestart()");
-        if (!mIsBackgroundRecord)
+        if (!getmIsBackgroundRecord())
             return;
         recordFunc.stopRecord();
         recordFunc.startRecord(UtilHelp.getTime());
@@ -182,7 +231,7 @@ public class RecordService extends Service {
         if (!getSharedPreferencesBackgroundRecord())        //是否设置了后台录音
             return;
 
-        if (!mIsBackgroundRecord) {
+        if (!getmIsBackgroundRecord()) {
             startBackgroundRecord();
         }
     }
@@ -197,13 +246,43 @@ public class RecordService extends Service {
         stopBackgroundRecord();
     }
 
+
+    MediaRecorder.OnErrorListener mediaErrorListener = new MediaRecorder.OnErrorListener() {
+        @Override
+        public void onError(MediaRecorder mr, int what, int extra) {
+            Log.e(LOG_TAG, "MediaRecorder onError");
+            switch (what) {
+                case MediaRecorder.MEDIA_RECORDER_ERROR_UNKNOWN:
+                case MediaRecorder.MEDIA_ERROR_SERVER_DIED:
+                    setmIsBackgroundError(true);
+                    break;
+                default:
+                    ;
+            }
+        }
+    };
+
+    MediaRecorder.OnInfoListener mediaInfoListener = new MediaRecorder.OnInfoListener() {
+        @Override
+        public void onInfo(MediaRecorder mr, int what, int extra) {
+            Log.e(LOG_TAG, "MediaRecorder onInfo");
+//            switch (what){
+//                case MediaRecorder.MEDIA_RECORDER_ERROR_UNKNOWN:
+//                case MediaRecorder.MEDIA_ERROR_SERVER_DIED:
+            setmIsBackgroundError(true);
+//                    break;
+//                default:;
+            //           }
+        }
+    };
+
     Handler serviceHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case OptMsg.MSG_REQ_RECORD_TRIGGER:
-                    if (!mIsBackgroundRecord) {               //没有启动后台录音
-                        if (mIsRecording)
+                    if (!getmIsBackgroundRecord()) {               //没有启动后台录音
+                        if (getmIsRecording())
                             stopNormalRecord();
                         else
                             startNormalRecord();
@@ -213,7 +292,7 @@ public class RecordService extends Service {
                     setBackgroundRecord();
                     break;
                 case OptMsg.MSG_REQ_BACKGROUND_STOP:        //停止后台录音
-                    stopBackgroundRecord();
+                    cancelBackgroundRecord();
                     break;
                 case OptMsg.MSG_REQ_SCHEDULE_RECORD_START:
                     break;
@@ -223,6 +302,8 @@ public class RecordService extends Service {
                     timerRestart();
                     break;
                 case OptMsg.MSG_REQ_CHECK_STATE:
+                    if (replyTo == null)
+                        Log.d(LOG_TAG, "");
                     replyTo = (Messenger) msg.replyTo;
                     sendStateUpdate();
                     break;
@@ -236,19 +317,46 @@ public class RecordService extends Service {
             super.handleMessage(msg);
         }
     };
-
+    static int i = 0;
     public class RecordTimerThread implements Runnable {
         @Override
         public void run() {
-            Log.d(LOG_TAG, "启动定时器");
-            while (mIsBackgroundRecord || mIsInScheduleRecording) {        //
+
+            i++;
+            Log.d(LOG_TAG, "启动定时器" + String.valueOf(i));
+//            while (getmIsBackgroundRecord()) {        //
+//                try {
+//                     Thread.sleep(20*1000);      //线程暂停，但是是毫秒
+//                   // Thread.sleep(getSharedPreferencesInterval());      //线程暂停，但是是毫秒
+//                    Message message = new Message();
+//                    message.what = OptMsg.MSG_INTERVAL_UP;
+//                    serviceHandler.sendMessage(message);
+//                    Log.d(LOG_TAG, "定时时间到");
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+            Log.d(LOG_TAG, "停止定时器");
+        }
+    }
+
+    public class RecordCheckThread implements Runnable {
+        @Override
+        public void run() {
+            Log.d(LOG_TAG, "检测线程启动");
+            while (true) {
                 try {
-                    // Thread.sleep(30*60*1000);      //线程暂停，但是是毫秒
-                    Thread.sleep(getSharedPreferencesInterval());      //线程暂停，但是是毫秒
-                    Message message = new Message();
-                    message.what = OptMsg.MSG_INTERVAL_UP;
-                    serviceHandler.sendMessage(message);
-                    Log.d(LOG_TAG, "定时时间到");
+                    Thread.sleep(30 * 1000);      //线程暂停，但是是毫秒,1分钟检测一次
+                    if (getSharedPreferencesBackgroundRecord()) {//设定了定时闹钟
+                        if (getmIsBackgroundRecord()) {
+                            if (getmIsBackgroundError()) {                         //闹钟不正常
+                                Log.e(LOG_TAG, "重置recorder");
+                                recordFunc.resetRecordStatus();
+                                recordFunc.startRecord(UtilHelp.getTime(), mediaErrorListener, mediaInfoListener);
+                                setmIsBackgroundError(false);
+                            }
+                        }
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -258,53 +366,73 @@ public class RecordService extends Service {
 
 
     public long getSharedPreferenceAlarmStartTime() {
-        return mSharedPreferences.getLong("alarmStartTime", 0);
+        synchronized (preferenceLock) {
+            return mSharedPreferences.getLong("alarmStartTime", 0);
+        }
     }
 
     public long getSharedPreferenceAlarmEndTime() {
-        return mSharedPreferences.getLong("alarmEndTime", 0);
+        synchronized (preferenceLock) {
+            return mSharedPreferences.getLong("alarmEndTime", 0);
+        }
     }
 
     public boolean getSharedPreferenceAlarmEnable() {
-        return mSharedPreferences.getBoolean("isAlarmEnable", false);
+        synchronized (preferenceLock) {
+            return mSharedPreferences.getBoolean("isAlarmEnable", false);
+        }
     }
 
     public boolean getSharedPreferencesBackgroundRecord() {
-        return mSharedPreferences.getBoolean("isBackgroundRecordEnable", false);
+        synchronized (preferenceLock) {
+            return mSharedPreferences.getBoolean("isBackgroundRecordEnable", false);
+        }
     }
 
     public long getSharedPreferencesInterval() {
-        return mSharedPreferences.getLong("interval", 0);
+        synchronized (preferenceLock) {
+            return mSharedPreferences.getLong("interval", 0);
+        }
     }
 
     public void setSharedPreferenceAlarmStartTime(long date) {
-        SharedPreferences.Editor mEditor = mSharedPreferences.edit();
-        mEditor.putLong("alarmStartTime", date);
-        mEditor.commit();
+        synchronized (preferenceLock) {
+            SharedPreferences.Editor mEditor = mSharedPreferences.edit();
+            mEditor.putLong("alarmStartTime", date);
+            mEditor.commit();
+        }
     }
 
     public void setSharedPreferenceAlarmEndTime(long date) {
-        SharedPreferences.Editor mEditor = mSharedPreferences.edit();
-        mEditor.putLong("alarmEndTime", date);
-        mEditor.commit();
+        synchronized (preferenceLock) {
+            SharedPreferences.Editor mEditor = mSharedPreferences.edit();
+            mEditor.putLong("alarmEndTime", date);
+            mEditor.commit();
+        }
     }
 
     public void setSharedPreferencesAlarmEnable(boolean enable) {
-        SharedPreferences.Editor mEditor = mSharedPreferences.edit();
-        mEditor.putBoolean("isAlarmEnable", enable);
-        mEditor.commit();
+        synchronized (preferenceLock) {
+            SharedPreferences.Editor mEditor = mSharedPreferences.edit();
+            mEditor.putBoolean("isAlarmEnable", enable);
+            mEditor.commit();
+        }
     }
 
     public void setSharedPreferencesBackgroundRecord(boolean enable) {
-        SharedPreferences.Editor mEditor = mSharedPreferences.edit();
-        mEditor.putBoolean("isBackgroundRecordEnable", enable);
-        mEditor.commit();
+        synchronized (preferenceLock) {
+            SharedPreferences.Editor mEditor = mSharedPreferences.edit();
+            mEditor.putBoolean("isBackgroundRecordEnable", enable);
+            mEditor.commit();
+        }
     }
 
     public void setSharedPreferencesInterval(long interval) {
-        SharedPreferences.Editor mEditor = mSharedPreferences.edit();
-        mEditor.putLong("interval", interval);
-        mEditor.commit();
+        synchronized (preferenceLock) {
+            SharedPreferences.Editor mEditor = mSharedPreferences.edit();
+            mEditor.putLong("interval", interval);
+            mEditor.commit();
+        }
     }
 
 

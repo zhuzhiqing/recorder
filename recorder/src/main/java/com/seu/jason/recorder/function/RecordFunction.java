@@ -25,9 +25,11 @@ public class RecordFunction {
 
     //语音操作对象
     private MediaRecorder mediaRecorder = null;
+    private MediaRecorder.OnErrorListener mediaErrorListener;
 
     //私有的默认构造子
-    private RecordFunction() {
+    private RecordFunction(/*MediaRecorder.OnErrorListener mediaErrorListener*/) {
+//        this.mediaErrorListener = mediaErrorListener;
     }
 
     //静态工厂方法
@@ -64,16 +66,58 @@ public class RecordFunction {
             mediaRecorder.setOutputFile(filePath);
             try {                                                            //prepare失败是否要释放mediaRecorder
                 mediaRecorder.prepare();
-                mediaRecorder.start();
-                isInRecord = true;
-                return OptMsg.STATE_SUCCESS;
             } catch (IOException e) {
                 Log.e(LOG_TAG, "startRecord().prepare() failed");
+                mediaRecorder.reset();
+                mediaRecorder.release();
+//                mediaRecorder.release();
                 return OptMsg.STATE_ERROR_UNKNOW;
             }
+            mediaRecorder.start();
+            isInRecord = true;
+            return OptMsg.STATE_SUCCESS;
 
         }
         return OptMsg.STATE_ERROR_BUSY;
+
+
+    }
+
+
+    //开始一次录音
+    public int startRecord(String filename, MediaRecorder.OnErrorListener listener, MediaRecorder.OnInfoListener infoListener) {
+        boolean result = false;
+        String filePath = Constants.RecorderDirectory + filename + ".amr";
+        File directory = new File(Constants.RecorderDirectory);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        if (!isInRecord) {            //判断是否正在录音
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+            mediaRecorder.setOutputFile(filePath);
+            mediaRecorder.setOnErrorListener(listener);
+            mediaRecorder.setOnInfoListener(infoListener);
+            try {                                                            //prepare失败是否要释放mediaRecorder
+                mediaRecorder.prepare();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "startRecord().prepare() failed");
+                mediaRecorder.stop();
+                mediaRecorder.release();
+                mediaRecorder = null;
+                return OptMsg.STATE_ERROR_UNKNOW;
+            }
+            mediaRecorder.start();
+            isInRecord = true;
+            return OptMsg.STATE_SUCCESS;
+
+        }
+        return OptMsg.STATE_ERROR_BUSY;
+
+
     }
 
     //停止录音
@@ -85,6 +129,14 @@ public class RecordFunction {
                 mediaRecorder = null;
             }
             isInRecord = false;
+        }
+    }
+
+    public void resetRecordStatus() {
+        if (mediaRecorder != null) {
+            mediaRecorder.stop();
+            mediaRecorder.reset();
+            mediaRecorder.release();
         }
     }
 }

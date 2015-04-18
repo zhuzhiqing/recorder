@@ -64,6 +64,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(LOG_TAG, "onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initVar();
@@ -78,10 +79,11 @@ public class MainActivity extends Activity {
         super.onStart();
 
         Intent serviceIntent = new Intent(this.getApplicationContext(), RecordService.class);
-        Bundle b = new Bundle();
-        b.putParcelable("messenger", mainActivityMessenger);
-        serviceIntent.putExtras(b);
+//        Bundle b = new Bundle();
+//        b.putParcelable("messenger", mainActivityMessenger);
+//        serviceIntent.putExtras(b);
         this.bindService(serviceIntent, mSc, Context.BIND_AUTO_CREATE);
+        sendOptMsg(OptMsg.MSG_REQ_CHECK_STATE);
 
         Date date = new Date();
         Date date2 = new Date();
@@ -139,10 +141,12 @@ public class MainActivity extends Activity {
     }
 
     public void triggerBackgroundRecord() {
-        Log.d(LOG_TAG, "triggerBackgroundRecord()");
-        if (mIsBackgroundRecording) {
+        // Log.d(LOG_TAG, "triggerBackgroundRecord()");
+        if (!mIsBackgroundRecording) {
+            Log.d(LOG_TAG, "startbackground()");
             sendOptMsg(OptMsg.MSG_REQ_BACKGROUND_START);
         } else {
+            Log.d(LOG_TAG, "stopbackground()");
             sendOptMsg(OptMsg.MSG_REQ_BACKGROUND_STOP);
         }
     }
@@ -198,7 +202,10 @@ public class MainActivity extends Activity {
             super.handleMessage(msg);
             switch (msg.what) {
                 case OptMsg.MSG_RST_CHECK_STATE:
+                    handleCheckState(msg);
                     break;
+                default:
+                    ;
             }
         }
 
