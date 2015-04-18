@@ -3,7 +3,6 @@ package com.seu.jason.recorder.service;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -194,7 +193,7 @@ public class RecordService extends Service {
 
         int result = OptMsg.STATE_ERROR_UNKNOW;
         if (!getmIsBackgroundRecord()) {
-            result = recordFunc.startRecord(UtilHelp.getTime(), mediaErrorListener, mediaInfoListener);
+            result = recordFunc.startRecord(UtilHelp.getTime());
             if (result == OptMsg.STATE_SUCCESS) {
                 setmIsBackgroundRecord(true);
                 sendStateUpdate();                  //状态变更
@@ -246,36 +245,6 @@ public class RecordService extends Service {
         stopBackgroundRecord();
     }
 
-
-    MediaRecorder.OnErrorListener mediaErrorListener = new MediaRecorder.OnErrorListener() {
-        @Override
-        public void onError(MediaRecorder mr, int what, int extra) {
-            Log.e(LOG_TAG, "MediaRecorder onError");
-            switch (what) {
-                case MediaRecorder.MEDIA_RECORDER_ERROR_UNKNOWN:
-                case MediaRecorder.MEDIA_ERROR_SERVER_DIED:
-                    setmIsBackgroundError(true);
-                    break;
-                default:
-                    ;
-            }
-        }
-    };
-
-    MediaRecorder.OnInfoListener mediaInfoListener = new MediaRecorder.OnInfoListener() {
-        @Override
-        public void onInfo(MediaRecorder mr, int what, int extra) {
-            Log.e(LOG_TAG, "MediaRecorder onInfo");
-//            switch (what){
-//                case MediaRecorder.MEDIA_RECORDER_ERROR_UNKNOWN:
-//                case MediaRecorder.MEDIA_ERROR_SERVER_DIED:
-            setmIsBackgroundError(true);
-//                    break;
-//                default:;
-            //           }
-        }
-    };
-
     Handler serviceHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -317,25 +286,23 @@ public class RecordService extends Service {
             super.handleMessage(msg);
         }
     };
-    static int i = 0;
+
     public class RecordTimerThread implements Runnable {
         @Override
         public void run() {
-
-            i++;
-            Log.d(LOG_TAG, "启动定时器" + String.valueOf(i));
-//            while (getmIsBackgroundRecord()) {        //
-//                try {
-//                     Thread.sleep(20*1000);      //线程暂停，但是是毫秒
-//                   // Thread.sleep(getSharedPreferencesInterval());      //线程暂停，但是是毫秒
-//                    Message message = new Message();
-//                    message.what = OptMsg.MSG_INTERVAL_UP;
-//                    serviceHandler.sendMessage(message);
-//                    Log.d(LOG_TAG, "定时时间到");
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
+            Log.d(LOG_TAG, "启动定时器");
+            while (getmIsBackgroundRecord()) {        //
+                try {
+                    Thread.sleep(20 * 1000);      //线程暂停，但是是毫秒
+                    // Thread.sleep(getSharedPreferencesInterval());      //线程暂停，但是是毫秒
+                    Message message = new Message();
+                    message.what = OptMsg.MSG_INTERVAL_UP;
+                    serviceHandler.sendMessage(message);
+                    Log.d(LOG_TAG, "定时时间到");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             Log.d(LOG_TAG, "停止定时器");
         }
     }
@@ -346,13 +313,13 @@ public class RecordService extends Service {
             Log.d(LOG_TAG, "检测线程启动");
             while (true) {
                 try {
-                    Thread.sleep(30 * 1000);      //线程暂停，但是是毫秒,1分钟检测一次
+                    Thread.sleep(1 * 1000);      //线程暂停，但是是毫秒,1分钟检测一次
                     if (getSharedPreferencesBackgroundRecord()) {//设定了定时闹钟
                         if (getmIsBackgroundRecord()) {
                             if (getmIsBackgroundError()) {                         //闹钟不正常
                                 Log.e(LOG_TAG, "重置recorder");
                                 recordFunc.resetRecordStatus();
-                                recordFunc.startRecord(UtilHelp.getTime(), mediaErrorListener, mediaInfoListener);
+                                recordFunc.startRecord(UtilHelp.getTime());
                                 setmIsBackgroundError(false);
                             }
                         }

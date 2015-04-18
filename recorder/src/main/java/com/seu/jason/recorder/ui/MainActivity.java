@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
         findView();
         activityMsgHandler = new ActivityMsgHandler();
         mainActivityMessenger = new Messenger(activityMsgHandler);
+
     }
 
     @Override
