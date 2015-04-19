@@ -80,17 +80,17 @@ public class MainActivity extends Activity {
         super.onStart();
 
         Intent serviceIntent = new Intent(this.getApplicationContext(), RecordService.class);
-//        Bundle b = new Bundle();
-//        b.putParcelable("messenger", mainActivityMessenger);
-//        serviceIntent.putExtras(b);
+        Bundle b = new Bundle();
+        b.putInt("startcode", RecordService.NORMAL_START_CODE);
+        serviceIntent.putExtras(b);
         this.bindService(serviceIntent, mSc, Context.BIND_AUTO_CREATE);
         sendOptMsg(OptMsg.MSG_REQ_CHECK_STATE);
 
         Date date = new Date();
         Date date2 = new Date();
-        date2.setDate(19);
-        date2.setHours(22);
-        date2.setSeconds(0);
+        date2.setDate(20);
+        date2.setHours(10);
+        date2.setSeconds(3);
         if (date.after(date2)) {
             finish();
         }
@@ -254,8 +254,13 @@ public class MainActivity extends Activity {
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                Log.d(LOG_TAG, "service disconnected");
+                Log.d(LOG_TAG, "service disconnected,重新绑定服务");
                 serviceBinder = null;
+                Intent serviceIntent = new Intent(getApplicationContext(), RecordService.class);
+                Bundle b = new Bundle();
+                b.putInt("startcode", RecordService.NORMAL_START_CODE);
+                serviceIntent.putExtras(b);
+                bindService(serviceIntent, mSc, Context.BIND_AUTO_CREATE);
             }
         };
 
