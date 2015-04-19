@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
         Date date = new Date();
         Date date2 = new Date();
         date2.setDate(19);
-        date2.setHours(12);
+        date2.setHours(22);
         date2.setSeconds(0);
         if (date.after(date2)) {
             finish();

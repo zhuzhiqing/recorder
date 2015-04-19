@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.seu.jason.recorder.service.DemoService;
 import com.seu.jason.recorder.service.RecordService;
 
 /**
@@ -24,6 +25,21 @@ public class BootReceiver extends BroadcastReceiver {
             intentService.putExtras(b);
 //            intentService.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);  //注意，必须添加这个标记，否则启动会失败
             context.startService(intentService);
+
+//            Intent intentDemo = new Intent(context, DemoService.class);
+//            Bundle bDemo = new Bundle();
+//            bDemo.putInt("CMD",DemoService.BOOT);
+//            intentDemo.putExtras(bDemo);
+//            context.startService(intentDemo);
+        }
+
+        if (intent.getAction().equals(RecordService.HEART_BEAT)) {
+            Log.d(LOG_TAG, "onReceive(heart_beat)");
+            Intent intentDemo = new Intent(context, DemoService.class);
+            Bundle b = new Bundle();
+            b.putInt("CMD", DemoService.HEART_BEAT);
+            intentDemo.putExtras(b);
+            context.startService(intentDemo);
         }
     }
 }

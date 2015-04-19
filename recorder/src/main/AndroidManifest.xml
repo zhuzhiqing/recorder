@@ -30,10 +30,14 @@
         <service
             android:name=".service.RecordService"
             android:process=":remote"></service>
+        <service
+            android:name=".service.DemoService"
+            android:process=":demo"></service>
 
         <receiver android:name=".broadcast.BootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.seu.jason.recorderdspy.heart_beat" />
             </intent-filter>
         </receiver>
     </application>

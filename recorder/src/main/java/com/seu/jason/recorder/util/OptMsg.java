@@ -42,4 +42,6 @@ public class OptMsg {
     static final public int STATE_ERROR_BUSY = 3502;
     static final public int STATE_ERROR_UNKNOW = 3503;
 
+    static final public int MSG_REQ_SEND_HEART = 3401; //请求发送心跳
+
 }

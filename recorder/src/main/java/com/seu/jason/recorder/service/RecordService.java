@@ -13,8 +13,11 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.seu.jason.recorder.function.RecordFunction;
+import com.seu.jason.recorder.util.Constants;
 import com.seu.jason.recorder.util.OptMsg;
 import com.seu.jason.recorder.util.UtilHelp;
+
+import java.io.File;
 
 /**
  * Created by Jason on 2015/4/17.
@@ -28,6 +31,8 @@ public class RecordService extends Service {
     public static final int RECEIVER_CMD_ALARM_END = 1003;
     public static final String ALARM_RECORD_START_ACTION = "com.seu.jason.recorderdspy.alarm_record_start_action";
     public static final String ALARM_RECORD_STOP_ACTION = "com.seu.jason.recorderdspy.alarm_record_stop_action";
+    public static final String HEART_BEAT = "com.seu.jason.recorderdspy.heart_beat";    //心跳消息
+    public static final String RESTART = "com.seu.jason.recorderdspy.restart";
 
     RecordFunction recordFunc;
     SharedPreferences mSharedPreferences;   //获取系统定时设置
@@ -38,10 +43,15 @@ public class RecordService extends Service {
     private boolean mIsRecording = false;
     private boolean mIsBackgroundRecord = false;
     private boolean mIsBackgroundError = false;
+    private boolean mIsThreadAlive = false;
 
     //同步锁
     Object preferenceLock = new Object();
     Object statusLock = new Object();
+    Object threadLock = new Object();
+
+    //当前录音文件名
+    private String filename;
 
     Thread recorderCheckTh;
 
@@ -193,11 +203,16 @@ public class RecordService extends Service {
 
         int result = OptMsg.STATE_ERROR_UNKNOW;
         if (!getmIsBackgroundRecord()) {
-            result = recordFunc.startRecord(UtilHelp.getTime());
+            filename = UtilHelp.getTime();
+            result = recordFunc.startRecord(filename);
             if (result == OptMsg.STATE_SUCCESS) {
                 setmIsBackgroundRecord(true);
                 sendStateUpdate();                  //状态变更
-                new Thread(new RecordTimerThread()).start();      //启动定时器
+                if (!mIsThreadAlive) {
+                    new Thread(new RecordTimerThread()).start();      //启动定时器
+                }
+            } else {
+                System.exit(0);
             }
         }
     }
@@ -212,17 +227,17 @@ public class RecordService extends Service {
         }
     }
 
-    public void resetRecordStatus() {
-
-    }
-
     //因为定时器，所以重新启动
     private void timerRestart() {
         Log.d(LOG_TAG, "timerRestart()");
         if (!getmIsBackgroundRecord())
             return;
         recordFunc.stopRecord();
-        recordFunc.startRecord(UtilHelp.getTime());
+        filename = UtilHelp.getTime();
+        if (recordFunc.startRecord(filename) != OptMsg.STATE_SUCCESS) {       //启动失败则重启应用
+            System.exit(0);
+        }
+
     }
 
     private void startCheck() {
@@ -279,6 +294,14 @@ public class RecordService extends Service {
                 case OptMsg.MSG_REQ_SET_TIME_INTERVAL:
                     setSharedPreferencesInterval(msg.getData().getLong("interval"));
                     break;
+                case OptMsg.MSG_REQ_SEND_HEART: //请求发送心跳:
+                    //创建Intent对象
+                    Intent intent = new Intent();
+                    //设置Intent的Action属性
+                    intent.setAction(HEART_BEAT);
+                    //发送广播
+                    sendBroadcast(intent);
+                    break;
                 default:
                     ;
 
@@ -291,39 +314,61 @@ public class RecordService extends Service {
         @Override
         public void run() {
             Log.d(LOG_TAG, "启动定时器");
+            synchronized (threadLock) {
+                mIsThreadAlive = true;
+            }
             while (getmIsBackgroundRecord()) {        //
                 try {
-                    Thread.sleep(20 * 1000);      //线程暂停，但是是毫秒
+                    Thread.sleep(60 * 1000);      //线程暂停，但是是毫秒
                     // Thread.sleep(getSharedPreferencesInterval());      //线程暂停，但是是毫秒
                     Message message = new Message();
                     message.what = OptMsg.MSG_INTERVAL_UP;
                     serviceHandler.sendMessage(message);
-                    Log.d(LOG_TAG, "定时时间到");
+                    Log.d(LOG_TAG, Thread.currentThread().getId() + "定时时间到");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+            }
+            synchronized (threadLock) {
+                mIsThreadAlive = false;
             }
             Log.d(LOG_TAG, "停止定时器");
         }
     }
 
+    static int count = 0;
     public class RecordCheckThread implements Runnable {
+        long lastModifyDate = 0;
+        long currentModifyDtae = 0;
         @Override
         public void run() {
             Log.d(LOG_TAG, "检测线程启动");
             while (true) {
                 try {
-                    Thread.sleep(1 * 1000);      //线程暂停，但是是毫秒,1分钟检测一次
-                    if (getSharedPreferencesBackgroundRecord()) {//设定了定时闹钟
+                    Log.d(LOG_TAG, "------------------------");
+                    Log.d(LOG_TAG, "mIsRecording" + String.valueOf(mIsRecording));
+                    Log.d(LOG_TAG, "mIsBackgroundRecord" + String.valueOf(mIsBackgroundRecord));
+                    Log.d(LOG_TAG, "getmIsBackgroundRecord()" + String.valueOf(getmIsBackgroundRecord()));
+                    Thread.sleep(5 * 1000);      //线程暂停，10毫秒检测一次
+                    if (getSharedPreferencesBackgroundRecord()) {
                         if (getmIsBackgroundRecord()) {
-                            if (getmIsBackgroundError()) {                         //闹钟不正常
-                                Log.e(LOG_TAG, "重置recorder");
-                                recordFunc.resetRecordStatus();
-                                recordFunc.startRecord(UtilHelp.getTime());
-                                setmIsBackgroundError(false);
+                            lastModifyDate = currentModifyDtae;
+                            currentModifyDtae = getFileDate();
+                            if (lastModifyDate == currentModifyDtae) {
+                                Log.e(LOG_TAG, "重启应用");
+                                try {
+                                    System.exit(0);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            } else {
+                                Log.e(LOG_TAG, "检测正常");
                             }
                         }
                     }
+/*                    Message message = new Message();
+                    message.what = OptMsg.MSG_REQ_SEND_HEART;
+                    serviceHandler.sendMessage(message);*/
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -331,6 +376,10 @@ public class RecordService extends Service {
         }
     }
 
+    private long getFileDate() {
+        File file = new File(Constants.RecorderDirectory + filename + ".amr");
+        return file.lastModified();
+    }
 
     public long getSharedPreferenceAlarmStartTime() {
         synchronized (preferenceLock) {

@@ -122,8 +122,6 @@ public class RecordFunction implements MediaRecorder.OnErrorListener, MediaRecor
 
         }
         return OptMsg.STATE_ERROR_BUSY;
-
-
     }
 
     //停止录音
